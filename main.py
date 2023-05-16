@@ -1,14 +1,10 @@
 import json
-import collections
 import collections.abc
-import time
 
-import pptx
+from pptx import Presentation
 import openai
 
-#API_KEY = "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"
-API_KEY = "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"
-
+#API_KEY = "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"
 
 
 
@@ -22,7 +18,7 @@ def read_pptx_file():
     filename = input("Enter the path to the PowerPoint file: ")
 
     # Open the PowerPoint file
-    prs = pptx.Presentation(filename)
+    prs = Presentation(filename)
 
     # Initialize an empty list to hold the text from each slide
     slides_text = []
@@ -46,41 +42,41 @@ def read_pptx_file():
 
     return slides_text
 
-
 def integrate_openai(slides_text):
     # Set the OpenAI API key
     openai.api_key = API_KEY
 
-    # Set the API endpoint for the free plan
-    openai.api_base = "https://api.openai.com/v1/"
-
     # Choose an AI model
     model_engine = "gpt-3.5-turbo"
 
-    # Create a prompt
-    prompt = "Write a summary of the following slides: "
+    # Create a prompt (add the quotation to the text of the presentation)
+    prompt = "Write a summary of the following slides:\n"
     for slide_text in slides_text:
         prompt += slide_text + "\n"
 
-
-    print(prompt)
     # Generate text
-    response = openai.Completion.create(
-        engine=model_engine,
-        prompt=prompt,
-        max_tokens=5
+    response = openai.ChatCompletion.create(
+        model=model_engine,
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": "summarize the slides"},
+        ],
+        max_tokens=512
     )
 
     # Save the generated text
-    generate_text = response.choices[0].text.strip()
+    generate_text = response.choices[0].message.content.strip()
+    generate_text = generate_text.replace(". ", ".\n")
 
     return generate_text
 
 
-if __name__ == "__main__":
+
+
+def main():
     # Call the read_pptx_file function to read the PowerPoint file
     slides_text = read_pptx_file()
-    # print(slides_text)
+    print(slides_text)
 
     # Integrate OpenAI
     generate_text = integrate_openai(slides_text)
@@ -89,3 +85,6 @@ if __name__ == "__main__":
     # Save the generated text to a JSON file
     save_to_json(generate_text, "generated_text.json")
 
+
+if __name__ == "__main__":
+    main()
