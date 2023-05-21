@@ -13,6 +13,7 @@ load_dotenv()
 # Get the API key from the environment variables
 API_KEY = os.environ.get("API_KEY")
 
+
 def save_to_json(generate_text, file_name):
     """
     Saves the generated text to a JSON file.
@@ -70,8 +71,6 @@ async def integrate_openai(slides_text):
     # Choose an AI model
     model_engine = "gpt-3.5-turbo"
 
-    # Choose how much words can get from the gpt
-    num_of_tokens = 2000
 
     # Create a prompt (add the quotation to the text of the presentation)
     prompt = "Write a summary of the following slides:\n"
@@ -84,8 +83,8 @@ async def integrate_openai(slides_text):
                                        messages=[
                                            {"role": "system", "content": prompt},
                                            {"role": "user", "content": "summarize the slides"},
-                                       ],
-                                       max_tokens=num_of_tokens)
+                                                ]
+                                       )
 
     # Save the generated text
     generate_text = response.choices[0].message.content.strip()
