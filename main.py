@@ -8,6 +8,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import json
 
 # Load the environment variables from the .env file
 load_dotenv()
@@ -28,23 +29,30 @@ requests_per_interval = 3
 interval_minutes = 1
 
 
-def save_to_json(generate_text, file_name):
+def save_to_json(generate_text: str, file_name: str) -> None:
     """
     Saves the generated text to a JSON file.
 
-    @param generate_text: The generated text to be saved.
-    @param file_name: The name of the JSON file to save.
+    Args:
+        generate_text (str): The generated text to be saved.
+        file_name (str): The name of the JSON file to save.
+
+    Returns:
+        None
     """
     with open(file_name, "w") as f:
         json.dump(generate_text, f)
 
 
-def read_pptx_file(file_path):
+def read_pptx_file(file_path: str) -> list[str]:
     """
     Reads the PowerPoint file and extracts the text from each slide.
 
-    @param file_path: The path to the PowerPoint file.
-    @return: A list of strings, where each string represents the text from a slide.
+    Args:
+        file_path (str): The path to the PowerPoint file.
+
+    Returns:
+        List[str]: A list of strings, where each string represents the text from a slide.
     """
     # Open the PowerPoint file
     prs = Presentation(file_path)
@@ -72,7 +80,17 @@ def read_pptx_file(file_path):
     return slides_text
 
 
-async def integrate_openai(slides_text):
+async def integrate_openai(slides_text: list[str]) -> str:
+    """
+      Integrates with the OpenAI API to generate summaries for each slide text.
+
+      Args:
+          slides_text (list[str]): A list of strings, where each string represents the text from each slide.
+
+      Returns:
+          str: The generated text summary.
+
+      """
     global request_counter
     global last_request_time
 
@@ -81,14 +99,14 @@ async def integrate_openai(slides_text):
     generate_text = ""
 
     for i, slide_text in enumerate(slides_text):
-        prompt = "Write a summary of the following slide:\n"
+        prompt = "Write a explain of the following slide:\n"
         prompt += slide_text + "\n"
 
         response = await asyncio.to_thread(openai.ChatCompletion.create,
                                            model=model_engine,
                                            messages=[
                                                {"role": "system", "content": prompt},
-                                               {"role": "user", "content": "summarize the slide"},
+                                               {"role": "user", "content": "explain the slide"},
                                            ]
                                            )
 
@@ -106,12 +124,13 @@ async def integrate_openai(slides_text):
             remaining_time = timedelta(minutes=interval_minutes) - time_diff
 
             if remaining_time.total_seconds() > 0:
+                print("Waiting for 60 seconds before the next request...")
                 await asyncio.sleep(remaining_time.total_seconds())
 
     return generate_text
 
 
-def get_pptx_file_path():
+def get_pptx_file_path() -> str:
     """
     Prompts the user to enter the path to the PowerPoint file.
 
@@ -128,7 +147,7 @@ def get_pptx_file_path():
     return filename
 
 
-async def main():
+async def main() -> None:
     """
     Main function to orchestrate the PowerPoint file processing and OpenAI integration.
     """
