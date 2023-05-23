@@ -1,17 +1,31 @@
 import json
 import collections.abc
+import time
 from os import path
 from pptx import Presentation
 import openai
 import asyncio
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 # Load the environment variables from the .env file
 load_dotenv()
 
 # Get the API key from the environment variables
 API_KEY = os.environ.get("API_KEY")
+
+# Counter for the number of requests made
+request_counter = 0
+
+# Last request time
+last_request_time = None
+
+# Number of requests allowed per time interval
+requests_per_interval = 3
+
+# Time interval in minutes
+interval_minutes = 1
 
 
 def save_to_json(generate_text, file_name):
@@ -25,15 +39,15 @@ def save_to_json(generate_text, file_name):
         json.dump(generate_text, f)
 
 
-def read_pptx_file(filePath):
+def read_pptx_file(file_path):
     """
     Reads the PowerPoint file and extracts the text from each slide.
 
-    @param filePath: The path to the PowerPoint file.
+    @param file_path: The path to the PowerPoint file.
     @return: A list of strings, where each string represents the text from a slide.
     """
     # Open the PowerPoint file
-    prs = Presentation(filePath)
+    prs = Presentation(file_path)
 
     # Initialize an empty list to hold the text from each slide
     slides_text = []
@@ -59,36 +73,40 @@ def read_pptx_file(filePath):
 
 
 async def integrate_openai(slides_text):
-    """
-    Integrates with OpenAI API to generate a summary of the slides.
+    global request_counter
+    global last_request_time
 
-    @param slides_text: A list of strings, where each string represents the text from a slide.
-    @return: The generated text summary.
-    """
-    # Set the OpenAI API key
     openai.api_key = API_KEY
-
-    # Choose an AI model
     model_engine = "gpt-3.5-turbo"
+    generate_text = ""
 
-
-    # Create a prompt (add the quotation to the text of the presentation)
-    prompt = "Write a summary of the following slides:\n"
-    for slide_text in slides_text:
+    for i, slide_text in enumerate(slides_text):
+        prompt = "Write a summary of the following slide:\n"
         prompt += slide_text + "\n"
 
-    # Generate text asynchronously
-    response = await asyncio.to_thread(openai.ChatCompletion.create,
-                                       model=model_engine,
-                                       messages=[
-                                           {"role": "system", "content": prompt},
-                                           {"role": "user", "content": "summarize the slides"},
-                                                ]
-                                       )
+        response = await asyncio.to_thread(openai.ChatCompletion.create,
+                                           model=model_engine,
+                                           messages=[
+                                               {"role": "system", "content": prompt},
+                                               {"role": "user", "content": "summarize the slide"},
+                                           ]
+                                           )
 
-    # Save the generated text
-    generate_text = response.choices[0].message.content.strip()
-    generate_text = generate_text.replace(". ", ".\n")
+        request_counter += 1
+        last_request_time = datetime.now()
+
+        summary = response.choices[0].message.content.strip()
+        summary = summary.replace(". ", ".\n")
+        generate_text += summary + "\n"
+
+        # print(f"test:----- current generate_text contain: ------- \n {generate_text} \n")
+
+        if i < len(slides_text) - 1 and request_counter % requests_per_interval == 0:
+            time_diff = datetime.now() - last_request_time
+            remaining_time = timedelta(minutes=interval_minutes) - time_diff
+
+            if remaining_time.total_seconds() > 0:
+                await asyncio.sleep(remaining_time.total_seconds())
 
     return generate_text
 
