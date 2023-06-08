@@ -1,4 +1,5 @@
 import json
+import re
 
 from flask import Flask, request, render_template, jsonify
 import os
@@ -80,11 +81,11 @@ def get_file_details(filename):
     timestamp, uid = filename_without_extension.rsplit('_', 2)[-2:]
 
     original_filename = filename_without_extension.split('_', 1)[0]
-
+    date_and_time = format_timestamp(timestamp)
     return {
         'status': get_file_status(filename),
         'filename': original_filename,
-        'timestamp': timestamp,
+        'timestamp': date_and_time,
         'explanation': get_file_explanation(filename)
     }
 
@@ -111,6 +112,17 @@ def status():
 
     return 'Invalid request'
 
+
+
+def format_timestamp(timestamp):
+    # Extract date and time components using regex groups
+    match = re.match(r'(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})', timestamp)
+    if match:
+        year, month, day, hour, minute, second = match.groups()
+        formatted_timestamp = f"Date: {year}.{month}.{day}, Time: {hour}:{minute}:{second}"
+        return formatted_timestamp
+    else:
+        return None
 
 if __name__ == '__main__':
     app.run()
