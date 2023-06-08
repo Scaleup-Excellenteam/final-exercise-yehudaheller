@@ -1,5 +1,7 @@
 import asyncio
 import os
+import shutil
+import time
 
 from os import path
 from pptx_parser import read_pptx_file, get_pptx_file_path
@@ -25,6 +27,7 @@ async def main() -> None:
             slides_text = read_pptx_file(pptx_file_path)
             print(slides_text)
 
+            handle_pending_status(pptx_file_path, "add")  # move from uploads and add to pending folder
             # Integrate OpenAI asynchronously
             generate_text = await integrate_openai(slides_text)
             print(generate_text)
@@ -35,6 +38,27 @@ async def main() -> None:
 
             # Save the generated text to a JSON file with the same name as the original presentation
             save_to_json(generate_text, output_file_name)
+
+            # the file already created in done folder, so delete from pending folder
+            handle_pending_status(pptx_file_path, "remove")
+
+        time.sleep(60)
+
+
+def handle_pending_status(file_path, action):
+    file_name = os.path.basename(file_path)
+    pending_folder = 'pending'
+
+    if action == "add":
+        if not os.path.exists(pending_folder):
+            os.makedirs(pending_folder)
+        # Move the file from uploads to pending folder
+        shutil.move(file_path, os.path.join(pending_folder, file_name))
+    elif action == "remove":
+        # Remove the file from the pending folder
+        file_in_pending = os.path.join(pending_folder, file_name)
+        if os.path.exists(file_in_pending):
+            os.remove(file_in_pending)
 
 
 if __name__ == "__main__":

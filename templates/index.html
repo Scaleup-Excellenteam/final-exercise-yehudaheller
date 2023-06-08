@@ -14,6 +14,17 @@
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>
+        {% if message %}
+            <p>{{ message }}</p>
+            {% if uid %}
+                <a href="{{ url_for('status', filename=uid) }}" class="btn btn-primary">Show Status</a>
+            {% endif %}
+        {% endif %}
+        {% if error %}
+            <div class="alert alert-danger mt-4">
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
     </div>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
