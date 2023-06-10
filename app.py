@@ -39,8 +39,10 @@ def index():
             # Save the file to the upload folder
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-            # Return the success message with the UID
-            return render_template('index.html', message='File uploaded successfully.', uid=filename)
+            # get the uid from the file name
+            uid_for_user = filename.split('_')[2].split('.')[0]
+
+            return render_template('index.html', message='File uploaded successfully. ', uid=uid_for_user)
 
     return render_template('index.html')
 
@@ -103,8 +105,34 @@ def get_file_explanation(filename):
     return None
 
 
-@app.route('/status', methods=['GET'])
+class UIDNotFoundException(Exception):
+    pass
+
+
+def find_file_by_uid(uid):
+    folders = ['uploads', 'pending', 'outputs']
+    for folder in folders:
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                if uid in file:
+                    return os.path.basename(file)
+    raise UIDNotFoundException("UID not found")
+
+
+@app.route('/status', methods=['GET', 'POST'])
 def status():
+    if request.method == 'POST':
+        uid = request.form.get('uid')
+        if uid:
+            try:
+                filename = find_file_by_uid(uid)
+                file_details = get_file_details(filename)
+                return render_template('status.html', data=file_details)
+            except UIDNotFoundException:
+                return render_template('index.html', error='UID not found')
+
+        return render_template('index.html', error='UID not provided')
+
     filename = request.args.get('filename')
     if filename:
         file_details = get_file_details(filename)
@@ -126,3 +154,5 @@ def format_timestamp(timestamp):
 
 if __name__ == '__main__':
     app.run()
+
+

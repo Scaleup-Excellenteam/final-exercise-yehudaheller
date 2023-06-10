@@ -3,11 +3,32 @@
 <head>
     <title>File Upload</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        .copy-button {
+            margin-top: 10px;
+        }
+    </style>
+    <script>
+        function copyUid() {
+            var uidInput = document.getElementById("uidInput");
+            uidInput.select();
+            document.execCommand("copy");
+        }
+
+          // Get the error message element for the uid error
+    var uidError = document.getElementById("uidError");
+
+    // Check if the error message is present in the template
+    {% if error %}
+        uidError.innerHTML = "{{ error }}";
+        uidError.style.display = "block";
+    {% endif %}
+    </script>
 </head>
 <body>
     <div class="container">
         <h1 class="mt-4">Upload a File</h1>
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" action="/">
             <div class="form-group">
                 <label for="fileInput">Select a File</label>
                 <input type="file" class="form-control-file" id="fileInput" name="file">
@@ -16,10 +37,24 @@
         </form>
         {% if message %}
             <p>{{ message }}</p>
-            {% if uid %}
-                <a href="{{ url_for('status', filename=uid) }}" class="btn btn-primary">Show Status</a>
-            {% endif %}
+            <p>Your uid is:</p>
+            <div>
+                <input type="text" class="form-control" id="uidInput" name="uid" value="{{ uid }}" readonly>
+                <button class="btn btn-secondary copy-button" onclick="copyUid()">Copy UID</button>
+            </div>
         {% endif %}
+
+        <!-- Add UID status form -->
+        <form method="POST" action="{{ url_for('status') }}">
+            <div class="form-group">
+                <label for="uidInput">Enter UID</label>
+                <input type="text" class="form-control" id="uidInput" name="uid">
+            </div>
+            <div id="uidError" class="alert alert-danger mt-2" style="display: none;"></div>
+
+            <button type="submit" class="btn btn-primary">Get Status</button>
+        </form>
+
         {% if error %}
             <div class="alert alert-danger mt-4">
                 <p>{{ error }}</p>

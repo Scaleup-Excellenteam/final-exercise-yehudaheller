@@ -15,7 +15,7 @@ async def main() -> None:
     """
 
     while True:
-        asyncio.sleep(10)
+        time.sleep(10)
         # Scan the uploads folder
         files = os.listdir('uploads')
 
@@ -29,20 +29,24 @@ async def main() -> None:
 
             handle_pending_status(pptx_file_path, "add")  # move from uploads and add to pending folder
             # Integrate OpenAI asynchronously
-            generate_text = await integrate_openai(slides_text)
-            print(generate_text)
+
+            answer = []
+            for slide in slides_text:
+                generate_text = await integrate_openai(slide)
+                answer.append(generate_text)
+            print(answer)
 
             # Get the output file name based on the PowerPoint file name
             file_name_without_extension = path.splitext(pptx_file_path)[0]
             output_file_name = file_name_without_extension + ".json"
 
             # Save the generated text to a JSON file with the same name as the original presentation
-            save_to_json(generate_text, output_file_name)
+            save_to_json(answer, output_file_name)
 
             # the file already created in done folder, so delete from pending folder
             handle_pending_status(pptx_file_path, "remove")
 
-        time.sleep(60)
+
 
 
 def handle_pending_status(file_path, action):
