@@ -70,7 +70,8 @@ def get_file_status(filename):
     json_filename = os.path.splitext(filename)[0] + '.json'
     if os.path.exists(os.path.join(DONE_FOLDER, pptx_filename)):
         return 'done'
-    elif os.path.exists(os.path.join(PENDING_FOLDER, pptx_filename)):
+    elif os.path.exists(os.path.join(PENDING_FOLDER, pptx_filename)) \
+            or os.path.exists(os.path.join(UPLOAD_FOLDER, pptx_filename)):
         return 'pending'
     elif os.path.exists(os.path.join(DONE_FOLDER, json_filename)):
         return 'done'
@@ -154,5 +155,4 @@ def format_timestamp(timestamp):
 
 if __name__ == '__main__':
     app.run()
-
 
