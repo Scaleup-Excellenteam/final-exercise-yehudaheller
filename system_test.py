@@ -1,96 +1,72 @@
 import subprocess
 import time
+import os
 import requests
+from bs4 import BeautifulSoup
 
-web_api_process = None
-explainer_process = None
+from app import find_file_by_uid
+
+SAMPLE_PPTX_TO_TEST = 'pres3.pptx'  # file in folder of the project
 
 
-def start_web_api():
-    """
-    Start the Web API process.
-    """
-    global web_api_process
-    web_api_process = subprocess.Popen(["python", "app.py"])
+def run_system_test():
+    # Step 1: Start the app.py file
+    app_process = subprocess.Popen(['python', 'app.py'], cwd=os.getcwd())
+
+    # Wait for the app to start
     time.sleep(2)
 
+    # Step 2: Start the main.py file
+    main_process = subprocess.Popen(['python', 'main.py'], cwd=os.getcwd())
 
-def start_explainer():
-    """
-    Start the Explainer process.
-    """
-    global explainer_process
-    explainer_process = subprocess.Popen(["python", "main.py"])
+    # Wait for the main process to start
     time.sleep(2)
+    time.sleep(30)
+
+    # Step 3: Upload the test file using the app's API endpoint
+    upload_url = 'http://localhost:5000/'
+
+    with open(SAMPLE_PPTX_TO_TEST, 'rb') as file:
+        response = requests.post(upload_url, files={'file': file})
+
+    if response.status_code != 200:
+        print("Test failed: File upload failed")
+        app_process.terminate()
+        main_process.terminate()
+        return
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    uid_input = soup.find('input', attrs={'name': 'uid'})
+    uid_for_user = uid_input['value']
+
+    print(f"The uid is {uid_for_user}")
+
+    # Find the output file based on the UID
+    output_file = find_file_by_uid(uid_for_user)
+
+    output_file_with_json_ending = output_file.split(".")[0] + ".json"
+    print(f"The output file is {output_file_with_json_ending}")
+
+    # Restart the main process
+    main_process = subprocess.Popen(['python', 'main.py'], cwd=os.getcwd())
+
+    # Wait for the main process to start
+    time.sleep(2)
+    time.sleep(30)  # Adjust the delay as needed
+
+    # Verify the output file in the done folder
+    expected_output_file = f'outputs/{output_file_with_json_ending}'
+    if not os.path.exists(expected_output_file):
+        print("Test failed: Output file not found")
+        app_process.terminate()
+        main_process.terminate()
+        return
+
+    print("System test completed successfully")
+
+    # Stop the processes
+    app_process.terminate()
+    main_process.terminate()
 
 
-def upload_sample_presentation():
-    """
-    Upload a sample presentation using the Python Client.
-
-    Returns:
-        str: The UID (unique identifier) of the uploaded presentation.
-    """
-    upload_url = "http://localhost:5000/"
-    file_path = "pres3.pptx"
-    files = {"file": open(file_path, "rb")}
-    response = requests.post(upload_url, files=files)
-
-    assert response.status_code == 200, f"Failed to upload the sample presentation. Error: {response.json()['message']}"
-
-    data = response.json()
-    uid = data["uid"]
-    print(f"Sample presentation uploaded successfully. UID: {uid}")
-    return uid
-
-
-def check_presentation_status(uid):
-    """
-    Check the status of the uploaded presentation using the Python Client.
-
-    Args:
-        uid (str): The UID (unique identifier) of the presentation.
-
-    Returns:
-        dict: Dictionary containing the presentation status, filename, timestamp, and explanation.
-    """
-    check_url = f"http://localhost:5000/check_file?uid={uid}"
-    response = requests.get(check_url)
-
-    assert response.status_code == 200, f"Failed to check the status of the presentation. Error: {response.json()['message']}"
-
-    data = response.json()
-    status = data["status"]
-    filename = data["filename"]
-    timestamp = data["timestamp"]
-    explanation = data["explanation"]
-
-    print(f"Status: {status}")
-    print(f"Filename: {filename}")
-    print(f"Timestamp: {timestamp}")
-    print(f"Explanation: {explanation}")
-    return data
-
-
-def stop_processes():
-    """
-    Stop the Web API and Explainer processes.
-    """
-    global web_api_process, explainer_process
-    web_api_process.terminate()
-    explainer_process.terminate()
-
-def main():
-    """
-    Main function to execute the workflow.
-    """
-    start_web_api()
-    start_explainer()
-    time.sleep(5)
-    uid = upload_sample_presentation()
-    check_presentation_status(uid)
-    stop_processes()
-
-
-if __name__ == "__main__":
-    main()
+run_system_test()
