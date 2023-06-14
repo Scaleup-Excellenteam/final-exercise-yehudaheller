@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload Status</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-4">File Upload Status</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Filename</th>
+                    <th>Timestamp</th>
+                    <th>Explanation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ data.status }}</td>
+                    <td>{{ data.filename }}</td>
+                    <td>{{ data.timestamp }}</td>
+                    <td>{{ data.explanation }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <button class="btn btn-primary" onclick="refreshStatus('{{ data.filename }}')">Refresh Status</button>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+              function refreshStatus() {
+          location.reload();
+        }
+    </script>
+</body>
+</html>
