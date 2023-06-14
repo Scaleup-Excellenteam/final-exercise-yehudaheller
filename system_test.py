@@ -62,8 +62,6 @@ def run_system_test():
         main_process.terminate()
         return
 
-    print("System test completed successfully")
-
     # Stop the processes
     app_process.terminate()
     main_process.terminate()
