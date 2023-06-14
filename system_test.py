@@ -61,10 +61,8 @@ def run_system_test():
         app_process.terminate()
         main_process.terminate()
         return
-
     # Stop the processes
     app_process.terminate()
     main_process.terminate()
-
 
 run_system_test()
