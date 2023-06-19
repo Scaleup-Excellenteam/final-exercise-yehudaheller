@@ -14,15 +14,6 @@
             uidInput.select();
             document.execCommand("copy");
         }
-
-          // Get the error message element for the uid error
-    var uidError = document.getElementById("uidError");
-
-    // Check if the error message is present in the template
-    {% if error %}
-        uidError.innerHTML = "{{ error }}";
-        uidError.style.display = "block";
-    {% endif %}
     </script>
 </head>
 <body>
@@ -32,6 +23,11 @@
             <div class="form-group">
                 <label for="fileInput">Select a File</label>
                 <input type="file" class="form-control-file" id="fileInput" name="file">
+            </div>
+            <!-- Add Email Address field -->
+            <div class="form-group">
+                <label for="emailInput">Email Address</label>
+                <input type="email" class="form-control" id="emailInput" name="email">
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>

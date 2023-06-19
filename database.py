@@ -27,7 +27,7 @@ class Upload(Base):
     __tablename__ = 'uploads'
 
     id = mapped_column(Integer, primary_key=True)
-    uid = mapped_column(String(36), unique=True, nullable=False, default=str(uuid.uuid4()))
+    uid = mapped_column(String(36), unique=True, nullable=False, default='')  # default empty uid
     filename = mapped_column(String(255), nullable=False)
     upload_time = mapped_column(DateTime, nullable=False, default=datetime.now)
     finish_time = mapped_column(DateTime)
@@ -53,29 +53,29 @@ session = Session()
 
 # ------------------test the database------------------
 # Create a new user and upload
-email = input("Enter your email (optional): ").strip()
-
-if email:
-    # User provided an email, check if it exists in Users table
-    user = session.query(User).filter_by(email=email).first()
-
-    # email already registered
-    if user:
-        upload = Upload(filename="justDumpFile.txt", status="done", user_id=user.id)
-        upload.set_finish_time()  # Set finish_time for uploads without a user
-    else:
-        # User doesn't exist, create a new User
-        user = User(email=email)
-        session.add(user)
-        session.commit()
-        upload = Upload(filename="justDumpFile.txt", status="done", user_id=user.id)
-        upload.set_finish_time()  # Set finish_time for uploads without a user
-
-    session.add(upload)
-    session.commit()
-else:
-    # User did not provide an email, create Upload without User
-    upload = Upload(filename="justDumpFile.txt", status="done")
-    upload.set_finish_time()  # Set finish_time for uploads without a user
-    session.add(upload)
-    session.commit()
+# email = input("Enter your email (optional): ").strip()
+#
+# if email:
+#     # User provided an email, check if it exists in Users table
+#     user = session.query(User).filter_by(email=email).first()
+#
+#     # email already registered
+#     if user:
+#         upload = Upload(filename="justDumpFile.txt", status="done", user_id=user.id)
+#         upload.set_finish_time()  # Set finish_time for uploads without a user
+#     else:
+#         # User doesn't exist, create a new User
+#         user = User(email=email)
+#         session.add(user)
+#         session.commit()
+#         upload = Upload(filename="justDumpFile.txt", status="done", user_id=user.id)
+#         upload.set_finish_time()  # Set finish_time for uploads without a user
+#
+#     session.add(upload)
+#     session.commit()
+# else:
+#     # User did not provide an email, create Upload without User
+#     upload = Upload(filename="justDumpFile.txt", status="done")
+#     upload.set_finish_time()  # Set finish_time for uploads without a user
+#     session.add(upload)
+#     session.commit()

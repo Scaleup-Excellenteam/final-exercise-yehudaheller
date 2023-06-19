@@ -5,6 +5,7 @@ from flask import Flask, request, render_template, jsonify
 import os
 from datetime import datetime
 import uuid
+from database import session, User, Upload
 
 app = Flask(__name__)
 
@@ -12,12 +13,17 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+PENDING_FOLDER = 'pending'
+DONE_FOLDER = 'outputs'  # if file in outputs folder mean its done
+
 # Create the uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-PENDING_FOLDER = 'pending'
-DONE_FOLDER = 'outputs'  # if file in outputs folder mean its done
+# Create the db folder if it doesn't exist
+folder_name = "db"
+if not os.path.exists(folder_name):
+    os.makedirs(folder_name)
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -32,6 +38,7 @@ def index():
         # Check if the file exists and has an allowed extension
         if file.filename == '':
             return 'No selected file'
+
         if file and allowed_file(file.filename):
             # Generate a unique filename
             filename = generate_unique_filename(file.filename)
@@ -39,8 +46,11 @@ def index():
             # Save the file to the upload folder
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
-            # get the uid from the file name
-            uid_for_user = filename.split('_')[2].split('.')[0]
+            # Get the uid from the file name
+            uid_for_user = filename.split('.')[0]
+
+            email = request.form.get('email')  # Get the email from the form
+            save_to_database(email, uid_for_user, filename)
 
             return render_template('index.html', message='File uploaded successfully. ', uid=uid_for_user)
 
@@ -57,17 +67,18 @@ def allowed_file(filename):
 
 def generate_unique_filename(filename):
     # Generate a unique filename by combining the original filename, timestamp, and UID
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     uid = str(uuid.uuid4().hex)  # Generate a random UID
     filename_without_extension, extension = os.path.splitext(filename)
-    new_filename = f"{filename_without_extension}_{timestamp}_{uid}{extension}"
+    new_filename = f"{uid}{extension}"
     return new_filename
 
 
 def get_file_status(filename):
     # Check if the file exists in outputs folder, pending, else return not found
     pptx_filename = os.path.splitext(filename)[0] + '.pptx'
-    json_filename = os.path.splitext(filename)[0] + '.json'
+    json_filename = filename.split(".")[0] + '.json'
+    print(f"the json_filename  is {json_filename}")
+
     if os.path.exists(os.path.join(DONE_FOLDER, pptx_filename)):
         return 'done'
     elif os.path.exists(os.path.join(PENDING_FOLDER, pptx_filename)) \
@@ -79,30 +90,56 @@ def get_file_status(filename):
         return 'not found'
 
 
-def get_file_details(filename):
-    filename_without_extension, _ = os.path.splitext(filename)
-    timestamp, uid = filename_without_extension.rsplit('_', 2)[-2:]
+def get_file_details(uid):
+    upload = get_upload_by_uid(uid)
+    if upload:
+        filename = upload.filename
+        original_filename = filename.split('_', 1)[0]
+        timestamp = upload.upload_time.strftime('%Y%m%d%H%M%S')
+        date_and_time = upload.upload_time
+        status = upload.status
+        explanation = get_file_explanation(uid)
+    else:
+        filename = None
+        original_filename = None
+        timestamp = None
+        date_and_time = None
+        status = None
+        explanation = None
 
-    original_filename = filename_without_extension.split('_', 1)[0]
-    date_and_time = format_timestamp(timestamp)
     return {
-        'status': get_file_status(filename),
+        'status': status,
         'filename': original_filename,
         'timestamp': date_and_time,
-        'explanation': get_file_explanation(filename)
+        'explanation': explanation
     }
 
 
-def get_file_explanation(filename):
-    # Retrieve the explanation from the processed output file if available
-    output_file_path = os.path.join(DONE_FOLDER, os.path.splitext(filename)[0] + '.json')
-    if os.path.exists(output_file_path):
-        # Read the data from the JSON file
-        with open(output_file_path, 'r') as file:
-            json_data = file.read()
-            data = json.loads(json_data)
-            return data
+def get_upload_by_uid(uid):
+    upload = session.query(Upload).filter_by(uid=uid).first()
+    return upload
 
+
+def get_file_explanation(filename_uid):
+    # Retrieve the explanation from the processed output file if available
+    output_file_path = os.path.join(DONE_FOLDER, os.path.splitext(filename_uid)[0] + '.json')
+
+    print(f"the uid from the output file is {output_file_path}")
+
+    # Iterate over all files in the directory
+    for file in os.listdir(DONE_FOLDER):
+        file_to_check = "outputs\\" + file
+        if file_to_check == output_file_path:
+            # Build the file path
+            file_path = os.path.join(DONE_FOLDER, file)
+
+            # Read the file
+            with open(file_path, 'r') as f:
+                # Parse the JSON data
+                data = json.load(f)
+                return data
+
+    # File not found
     return None
 
 
@@ -126,33 +163,40 @@ def status():
         uid = request.form.get('uid')
         if uid:
             try:
-                filename = find_file_by_uid(uid)
-                file_details = get_file_details(filename)
+                file_details = get_file_details(uid)
                 return render_template('status.html', data=file_details)
             except UIDNotFoundException:
-                return render_template('index.html', error='UID not found')
+                return render_template('index.html', error='UID not found'), 404
 
-        return render_template('index.html', error='UID not provided')
-
-    filename = request.args.get('filename')
-    if filename:
-        file_details = get_file_details(filename)
-        return render_template('status.html', data=file_details)
-
-    return 'Invalid request'
+        return render_template('index.html', error='UID not provided'), 404
 
 
+def save_to_database(email, uid_for_user, filename):
+    if email:
+        # User provided an email, check if it exists in Users table
+        user = session.query(User).filter_by(email=email).first()
 
-def format_timestamp(timestamp):
-    # Extract date and time components using regex groups
-    match = re.match(r'(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})', timestamp)
-    if match:
-        year, month, day, hour, minute, second = match.groups()
-        formatted_timestamp = f"Date: {year}.{month}.{day}, Time: {hour}:{minute}:{second}"
-        return formatted_timestamp
+        # if email already registered
+        if user:
+            upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(filename), user_id=user.id)
+            upload.set_finish_time()  # Set finish_time for uploads without a user
+        else:
+            # User doesn't exist, create a new User
+            user = User(email=email)
+            session.add(user)
+            session.commit()
+            upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(filename), user_id=user.id)
+            upload.set_finish_time()  # Set finish_time for uploads without a user
+
+        session.add(upload)
+        session.commit()
     else:
-        return None
+        # User did not provide an email, create Upload without User
+        upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(filename))
+        upload.set_finish_time()  # Set finish_time for uploads without a user
+        session.add(upload)
+        session.commit()
+
 
 if __name__ == '__main__':
     app.run()
-
