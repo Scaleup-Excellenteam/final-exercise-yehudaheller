@@ -42,7 +42,7 @@ def index():
         if file and allowed_file(file.filename):
             # Generate a unique filename
             filename = generate_unique_filename(file.filename)
-
+            orginal_filename_for_save_to_db = os.path.basename(file.filename)
             # Save the file to the upload folder
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
@@ -50,7 +50,7 @@ def index():
             uid_for_user = filename.split('.')[0]
 
             email = request.form.get('email')  # Get the email from the form
-            save_to_database(email, uid_for_user, filename)
+            save_to_database(email, uid_for_user, orginal_filename_for_save_to_db)
 
             return render_template('index.html', message='File uploaded successfully. ', uid=uid_for_user)
 
