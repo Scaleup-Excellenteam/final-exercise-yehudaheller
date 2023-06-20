@@ -13,6 +13,11 @@ from sqlalchemy import create_engine
 Base = declarative_base()
 DB_PATH = os.path.join("db", "database.db")
 
+# Create the folder if it doesn't exist
+folder_path = os.path.dirname(DB_PATH)
+if not os.path.exists(folder_path):
+    os.makedirs(folder_path)
+
 
 class User(Base):
     """Class representing a user in the system."""

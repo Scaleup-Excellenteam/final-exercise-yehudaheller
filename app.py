@@ -17,17 +17,16 @@ UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 PENDING_FOLDER = 'pending'
-DONE_FOLDER = 'outputs'  # if file in outputs folder mean it's done
+DONE_FOLDER = 'outputs'
+
 
 # Create the uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Create the db folder if it doesn't exist
-folder_name = "db"
-if not os.path.exists(folder_name):
-    os.makedirs(folder_name)
-
+# Create the done folder if it doesn't exist
+if not os.path.exists(DONE_FOLDER):
+    os.makedirs(DONE_FOLDER)
 
 @app.route('/', methods=['GET', 'POST'])
 def index() -> Union[str, Any]:
@@ -105,30 +104,28 @@ def generate_unique_filename(filename: str) -> str:
     return new_filename
 
 
-def get_file_status(filename: str) -> str:
+def get_file_status(uid: str) -> str:
     """
-    Check the status of the file based on its filename.
+    Retrieve the file status from the database based on its UID.
 
     Args:
-        filename: The name of the file.
+        uid: The UID of the file.
 
     Returns:
         The status of the file ('done', 'pending', or 'not found').
     """
-    # Check if the file exists in outputs folder, pending, else return not found
-    pptx_filename = os.path.splitext(filename)[0] + '.pptx'
-    json_filename = filename.split(".")[0] + '.json'
-    print(f"the json_filename is {json_filename}")
-
-    if os.path.exists(os.path.join(DONE_FOLDER, pptx_filename)):
-        return 'done'
-    elif os.path.exists(os.path.join(PENDING_FOLDER, pptx_filename)) \
-            or os.path.exists(os.path.join(UPLOAD_FOLDER, pptx_filename)):
-        return 'pending'
-    elif os.path.exists(os.path.join(DONE_FOLDER, json_filename)):
-        return 'done'
-    else:
+    try:
+        upload = session.query(Upload).filter_by(uid=uid).first()
+        if upload:
+            return upload.status
+        else:
+            return 'pending'
+    except Exception as e:
+        # Handle any exceptions that may occur during the database query
+        print(f"An error occurred while retrieving file status: {str(e)}")
         return 'not found'
+
+
 
 
 def get_file_details(uid: str) -> Dict[str, Union[str, datetime, Any]]:
@@ -312,21 +309,21 @@ def save_to_database(email: str, uid_for_user: str, filename: str) -> None:
 
         # if email already registered
         if user:
-            upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(filename), user_id=user.id)
+            upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(uid_for_user), user_id=user.id)
             upload.set_finish_time()  # Set finish_time for uploads without a user
         else:
             # User doesn't exist, create a new User
             user = User(email=email)
             session.add(user)
             session.commit()
-            upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(filename), user_id=user.id)
+            upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(uid_for_user), user_id=user.id)
             upload.set_finish_time()  # Set finish_time for uploads without a user
 
         session.add(upload)
         session.commit()
     else:
         # User did not provide an email, create Upload without User
-        upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(filename))
+        upload = Upload(uid=uid_for_user, filename=filename, status=get_file_status(uid_for_user))
         upload.set_finish_time()  # Set finish_time for uploads without a user
         session.add(upload)
         session.commit()
