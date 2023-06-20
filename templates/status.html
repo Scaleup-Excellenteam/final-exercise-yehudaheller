@@ -3,12 +3,57 @@
 <head>
     <title>File Upload Status</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .table {
+            margin-bottom: 30px;
+        }
+
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="mt-4">File Upload Status</h1>
-        <table class="table">
-            <thead>
+        <h1>File Upload Status</h1>
+        <table class="table table-bordered table-hover">
+            <thead class="thead-dark">
                 <tr>
                     <th>Status</th>
                     <th>Filename</th>
@@ -29,8 +74,8 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-              function refreshStatus() {
-          location.reload();
+        function refreshStatus(filename) {
+            location.reload();
         }
     </script>
 </body>

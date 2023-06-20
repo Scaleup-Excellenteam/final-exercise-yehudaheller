@@ -1,7 +1,7 @@
 import json
 import re
 
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for
 import os
 from datetime import datetime
 import uuid
@@ -28,6 +28,8 @@ if not os.path.exists(folder_name):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    error = request.args.get('error')
+
     if request.method == 'POST':
         # Check if a file was submitted
         if 'file' not in request.files:
@@ -54,7 +56,7 @@ def index():
 
             return render_template('index.html', message='File uploaded successfully. ', uid=uid_for_user)
 
-    return render_template('index.html')
+    return render_template('index.html', error=error)
 
 
 def allowed_file(filename):
@@ -161,14 +163,35 @@ def find_file_by_uid(uid):
 def status():
     if request.method == 'POST':
         uid = request.form.get('uid')
+        email = request.form.get('email')
+        filename = request.form.get('filename')
+
         if uid:
             try:
                 file_details = get_file_details(uid)
                 return render_template('status.html', data=file_details)
             except UIDNotFoundException:
-                return render_template('index.html', error='UID not found'), 404
+                return redirect(url_for('index', error='UID not found'))
+        elif email and filename:
+            try:
+                uid = get_uid_by_email_and_filename(email, filename)
+                file_details = get_file_details(uid)
+                return render_template('status.html', data=file_details)
+            except UIDNotFoundException:
+                return redirect(url_for('index', error='No matching record found'))
+        else:
+            return redirect(url_for('index', error='UID or Email and Filename not provided'))
+    else:
+        return render_template('index.html')
 
-        return render_template('index.html', error='UID not provided'), 404
+
+def get_uid_by_email_and_filename(email, filename):
+    user = session.query(User).filter_by(email=email).first()
+    if user:
+        upload = session.query(Upload).filter_by(user_id=user.id, filename=filename).first()
+        if upload:
+            return upload.uid
+    raise UIDNotFoundException("UID not found")
 
 
 def save_to_database(email, uid_for_user, filename):
