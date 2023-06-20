@@ -39,12 +39,12 @@ async def main() -> None:
             for slide in slides_text:
                 generate_text = await integrate_openai(slide)
                 answer.append(generate_text)
-            print(answer)
+            list_answer_to_string = ' '.join(answer)
 
             # Get the output file name based on the PowerPoint file name
             output_file_name = get_file_name(uid)
 
-            save_to_json(answer, output_file_name)
+            save_to_json(list_answer_to_string, output_file_name)
             finish_time = datetime.now()
             update_file_status_in_database_by_uid(uid, status="done", finish_time=finish_time)
 
@@ -54,6 +54,7 @@ async def main() -> None:
 
 def get_file_name(uid):
     return uid + ".json"
+
 
 def handle_pending_status(file_path, action):
     file_name = os.path.basename(file_path)
@@ -83,6 +84,7 @@ def update_file_status_in_database_by_uid(uid, status, upload_time=None, finish_
         session.commit()
     else:
         print(f"Upload with UID '{uid_without_path}' not found in the database.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

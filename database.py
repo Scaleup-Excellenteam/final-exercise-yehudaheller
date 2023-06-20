@@ -15,6 +15,8 @@ DB_PATH = os.path.join("db", "database.db")
 
 
 class User(Base):
+    """Class representing a user in the system."""
+
     __tablename__ = 'users'
 
     id = mapped_column(Integer, primary_key=True)
@@ -24,6 +26,8 @@ class User(Base):
 
 
 class Upload(Base):
+    """Class representing an uploaded file in the system."""
+
     __tablename__ = 'uploads'
 
     id = mapped_column(Integer, primary_key=True)
@@ -36,10 +40,12 @@ class Upload(Base):
 
     user = relationship("User", back_populates="uploads")
 
-    def upload_path(self):
+    def upload_path(self) -> str:
+        """Get the path of the uploaded file."""
         return os.path.join("uploads", self.filename)
 
-    def set_finish_time(self):
+    def set_finish_time(self) -> None:
+        """Set the finish time of the upload to the current datetime."""
         self.finish_time = datetime.now()  # finish_time
 
 
@@ -51,31 +57,3 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# ------------------test the database------------------
-# Create a new user and upload
-# email = input("Enter your email (optional): ").strip()
-#
-# if email:
-#     # User provided an email, check if it exists in Users table
-#     user = session.query(User).filter_by(email=email).first()
-#
-#     # email already registered
-#     if user:
-#         upload = Upload(filename="justDumpFile.txt", status="done", user_id=user.id)
-#         upload.set_finish_time()  # Set finish_time for uploads without a user
-#     else:
-#         # User doesn't exist, create a new User
-#         user = User(email=email)
-#         session.add(user)
-#         session.commit()
-#         upload = Upload(filename="justDumpFile.txt", status="done", user_id=user.id)
-#         upload.set_finish_time()  # Set finish_time for uploads without a user
-#
-#     session.add(upload)
-#     session.commit()
-# else:
-#     # User did not provide an email, create Upload without User
-#     upload = Upload(filename="justDumpFile.txt", status="done")
-#     upload.set_finish_time()  # Set finish_time for uploads without a user
-#     session.add(upload)
-#     session.commit()

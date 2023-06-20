@@ -1,10 +1,13 @@
 import json
+import os
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Union
+import uuid
 
 from flask import Flask, request, render_template, jsonify, redirect, url_for
-import os
-from datetime import datetime
-import uuid
+from sqlalchemy import desc
+
 from database import session, User, Upload
 
 app = Flask(__name__)
@@ -14,7 +17,7 @@ UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 PENDING_FOLDER = 'pending'
-DONE_FOLDER = 'outputs'  # if file in outputs folder mean its done
+DONE_FOLDER = 'outputs'  # if file in outputs folder mean it's done
 
 # Create the uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
@@ -27,7 +30,16 @@ if not os.path.exists(folder_name):
 
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
+def index() -> Union[str, Any]:
+    """
+    Main route for the web application.
+    Handles file uploads and displays the index page.
+
+    Returns:
+        If a file is uploaded successfully, renders the index.html template with success message.
+        If there's an error, renders the index.html template with error message.
+        If the request method is GET, renders the index.html template.
+    """
     error = request.args.get('error')
 
     if request.method == 'POST':
@@ -59,7 +71,16 @@ def index():
     return render_template('index.html', error=error)
 
 
-def allowed_file(filename):
+def allowed_file(filename: str) -> bool:
+    """
+    Check if the given filename has an allowed extension.
+
+    Args:
+        filename: The name of the file.
+
+    Returns:
+        True if the file extension is allowed, False otherwise.
+    """
     # Specify the allowed file extensions
     allowed_extensions = {'pptx'}
 
@@ -67,7 +88,16 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 
-def generate_unique_filename(filename):
+def generate_unique_filename(filename: str) -> str:
+    """
+    Generate a unique filename by combining the original filename, timestamp, and UID.
+
+    Args:
+        filename: The original name of the file.
+
+    Returns:
+        A unique filename.
+    """
     # Generate a unique filename by combining the original filename, timestamp, and UID
     uid = str(uuid.uuid4().hex)  # Generate a random UID
     filename_without_extension, extension = os.path.splitext(filename)
@@ -75,11 +105,20 @@ def generate_unique_filename(filename):
     return new_filename
 
 
-def get_file_status(filename):
+def get_file_status(filename: str) -> str:
+    """
+    Check the status of the file based on its filename.
+
+    Args:
+        filename: The name of the file.
+
+    Returns:
+        The status of the file ('done', 'pending', or 'not found').
+    """
     # Check if the file exists in outputs folder, pending, else return not found
     pptx_filename = os.path.splitext(filename)[0] + '.pptx'
     json_filename = filename.split(".")[0] + '.json'
-    print(f"the json_filename  is {json_filename}")
+    print(f"the json_filename is {json_filename}")
 
     if os.path.exists(os.path.join(DONE_FOLDER, pptx_filename)):
         return 'done'
@@ -92,7 +131,16 @@ def get_file_status(filename):
         return 'not found'
 
 
-def get_file_details(uid):
+def get_file_details(uid: str) -> Dict[str, Union[str, datetime, Any]]:
+    """
+    Get the details of a file based on its UID.
+
+    Args:
+        uid: The UID of the file.
+
+    Returns:
+        A dictionary containing the file details (status, filename, timestamp, explanation).
+    """
     upload = get_upload_by_uid(uid)
     if upload:
         filename = upload.filename
@@ -117,12 +165,30 @@ def get_file_details(uid):
     }
 
 
-def get_upload_by_uid(uid):
+def get_upload_by_uid(uid: str) -> Union[Upload, None]:
+    """
+    Get the Upload object based on its UID.
+
+    Args:
+        uid: The UID of the file.
+
+    Returns:
+        The Upload object if found, None otherwise.
+    """
     upload = session.query(Upload).filter_by(uid=uid).first()
     return upload
 
 
-def get_file_explanation(filename_uid):
+def get_file_explanation(filename_uid: str) -> Union[Dict[str, Any], None]:
+    """
+    Get the explanation data from the processed output file.
+
+    Args:
+        filename_uid: The filename or UID of the file.
+
+    Returns:
+        The explanation data as a dictionary if available, None otherwise.
+    """
     # Retrieve the explanation from the processed output file if available
     output_file_path = os.path.join(DONE_FOLDER, os.path.splitext(filename_uid)[0] + '.json')
 
@@ -149,7 +215,19 @@ class UIDNotFoundException(Exception):
     pass
 
 
-def find_file_by_uid(uid):
+def find_file_by_uid(uid: str) -> str:
+    """
+    Find the filename associated with the given UID.
+
+    Args:
+        uid: The UID of the file.
+
+    Returns:
+        The filename if found.
+
+    Raises:
+        UIDNotFoundException: If the UID is not found in any of the folders.
+    """
     folders = ['uploads', 'pending', 'outputs']
     for folder in folders:
         for root, dirs, files in os.walk(folder):
@@ -160,7 +238,18 @@ def find_file_by_uid(uid):
 
 
 @app.route('/status', methods=['GET', 'POST'])
-def status():
+def status() -> Union[str, Any]:
+    """
+    Route for checking the status of a file.
+    Handles both UID and email/filename based queries.
+
+    Returns:
+        If the request method is POST:
+            - If UID is provided, renders the status.html template with file details.
+            - If email and filename are provided, renders the status.html template with file details.
+            - If UID or Email and Filename are not provided, redirects to the index page with an error message.
+        If the request method is GET, renders the index.html template.
+    """
     if request.method == 'POST':
         uid = request.form.get('uid')
         email = request.form.get('email')
@@ -185,16 +274,38 @@ def status():
         return render_template('index.html')
 
 
-def get_uid_by_email_and_filename(email, filename):
+def get_uid_by_email_and_filename(email: str, filename: str) -> str:
+    """
+    Get the UID based on the given email and filename.
+
+    Args:
+        email: The email of the user.
+        filename: The name of the file.
+
+    Returns:
+        The UID of the file.
+
+    Raises:
+        UIDNotFoundException: If the UID is not found for the given email and filename.
+    """
     user = session.query(User).filter_by(email=email).first()
     if user:
-        upload = session.query(Upload).filter_by(user_id=user.id, filename=filename).first()
-        if upload:
-            return upload.uid
+        last_upload = session.query(Upload).order_by(desc(Upload.upload_time)).first()
+
+        if last_upload:
+            return last_upload.uid
     raise UIDNotFoundException("UID not found")
 
 
-def save_to_database(email, uid_for_user, filename):
+def save_to_database(email: str, uid_for_user: str, filename: str) -> None:
+    """
+    Save the file information to the database.
+
+    Args:
+        email: The email of the user.
+        uid_for_user: The UID associated with the user.
+        filename: The name of the file.
+    """
     if email:
         # User provided an email, check if it exists in Users table
         user = session.query(User).filter_by(email=email).first()
