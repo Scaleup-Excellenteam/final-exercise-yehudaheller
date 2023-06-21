@@ -1,11 +1,10 @@
 import json
 import os
-import re
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Union
 import uuid
 
-from flask import Flask, request, render_template, jsonify, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for
 from sqlalchemy import desc
 
 from database import session, User, Upload
@@ -19,7 +18,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 PENDING_FOLDER = 'pending'
 DONE_FOLDER = 'outputs'
 
-
 # Create the uploads folder if it doesn't exist
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -27,6 +25,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Create the done folder if it doesn't exist
 if not os.path.exists(DONE_FOLDER):
     os.makedirs(DONE_FOLDER)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index() -> Union[str, Any]:
@@ -126,8 +125,6 @@ def get_file_status(uid: str) -> str:
         return 'not found'
 
 
-
-
 def get_file_details(uid: str) -> Dict[str, Union[str, datetime, Any]]:
     """
     Get the details of a file based on its UID.
@@ -139,26 +136,12 @@ def get_file_details(uid: str) -> Dict[str, Union[str, datetime, Any]]:
         A dictionary containing the file details (status, filename, timestamp, explanation).
     """
     upload = get_upload_by_uid(uid)
-    if upload:
-        filename = upload.filename
-        original_filename = filename.split('_', 1)[0]
-        timestamp = upload.upload_time.strftime('%Y%m%d%H%M%S')
-        date_and_time = upload.upload_time
-        status = upload.status
-        explanation = get_file_explanation(uid)
-    else:
-        filename = None
-        original_filename = None
-        timestamp = None
-        date_and_time = None
-        status = None
-        explanation = None
 
     return {
-        'status': status,
-        'filename': original_filename,
-        'timestamp': date_and_time,
-        'explanation': explanation
+        'status': upload.status if upload else None,
+        'filename': upload.filename.split('_', 1)[0] if upload else None,
+        'timestamp': upload.upload_time if upload else None,
+        'explanation': get_file_explanation(uid) if upload else None
     }
 
 
@@ -210,28 +193,6 @@ def get_file_explanation(filename_uid: str) -> Union[Dict[str, Any], None]:
 
 class UIDNotFoundException(Exception):
     pass
-
-
-def find_file_by_uid(uid: str) -> str:
-    """
-    Find the filename associated with the given UID.
-
-    Args:
-        uid: The UID of the file.
-
-    Returns:
-        The filename if found.
-
-    Raises:
-        UIDNotFoundException: If the UID is not found in any of the folders.
-    """
-    folders = ['uploads', 'pending', 'outputs']
-    for folder in folders:
-        for root, dirs, files in os.walk(folder):
-            for file in files:
-                if uid in file:
-                    return os.path.basename(file)
-    raise UIDNotFoundException("UID not found")
 
 
 @app.route('/status', methods=['GET', 'POST'])
@@ -287,7 +248,7 @@ def get_uid_by_email_and_filename(email: str, filename: str) -> str:
     """
     user = session.query(User).filter_by(email=email).first()
     if user:
-        last_upload = session.query(Upload).order_by(desc(Upload.upload_time)).first()
+        last_upload = session.query(Upload).filter_by(filename=filename, user=user).order_by(desc(Upload.upload_time)).first()
 
         if last_upload:
             return last_upload.uid

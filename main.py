@@ -1,12 +1,12 @@
 import asyncio
 import os
-import shutil
 import time
 from datetime import datetime
 from pptx_parser import read_pptx_file
 from openai_integration import integrate_openai
 from json_utils import save_to_json
 from database import session, Upload
+
 
 async def main() -> None:
     """
@@ -45,7 +45,6 @@ async def main() -> None:
             # Delete the PowerPoint file from the uploads folder
             file_to_move = uid + ".pptx"
             remove_file_from_uploads(file_to_move)
-
 
 
 def remove_file_from_uploads(filename: str) -> None:
@@ -87,15 +86,16 @@ def get_file_name(uid: str) -> str:
     return uid + ".json"
 
 
-def update_file_status_in_database_by_uid(uid: str, status: str, upload_time: datetime = None, finish_time: datetime = None) -> None:
+def update_file_status_in_database_by_uid(uid: str, status: str, upload_time: datetime = None,
+                                          finish_time: datetime = None) -> None:
     """
     Updates the file status in the database based on the UID.
 
     Args:
         uid: The unique identifier.
         status: The status to set.
-        upload_time: The upload time (optional).
-        finish_time: The finish time (optional).
+        upload_time: The upload time (none is default if not set_.
+        finish_time: The finish time (none is default if not set).
     """
     upload = session.query(Upload).filter_by(uid=uid).first()
     if upload:

@@ -1,10 +1,7 @@
 import datetime
 import os
-import uuid
 from datetime import datetime
-
 from sqlalchemy import DateTime, ForeignKey, Integer, String
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, mapped_column
 from sqlalchemy.orm import sessionmaker
