@@ -1,5 +1,5 @@
 import datetime
-import os
+from os import path, makedirs
 from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -8,12 +8,12 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
 Base = declarative_base()
-DB_PATH = os.path.join("db", "database.db")
+DB_PATH = path.join("db", "database.db")
 
 # Create the folder if it doesn't exist
-folder_path = os.path.dirname(DB_PATH)
-if not os.path.exists(folder_path):
-    os.makedirs(folder_path)
+folder_path = path.dirname(DB_PATH)
+if not path.exists(folder_path):
+    makedirs(folder_path)
 
 
 class User(Base):
@@ -44,7 +44,7 @@ class Upload(Base):
 
     def upload_path(self) -> str:
         """Get the path of the uploaded file."""
-        return os.path.join("uploads", self.filename)
+        return path.join("uploads", self.filename)
 
     def set_finish_time(self) -> None:
         """Set the finish time of the upload to the current datetime."""

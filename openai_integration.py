@@ -1,6 +1,6 @@
 import asyncio
 import os
-import time
+from time import time
 import openai
 from dotenv import load_dotenv
 
@@ -17,7 +17,7 @@ last_request_time = 0
 async def integrate_openai(prompt: str) -> str:
     global request_count, last_request_time
 
-    current_time = time.time()
+    current_time = time()
     time_elapsed = current_time - last_request_time
 
     prompt_request = "please explain me this slide: " + prompt
@@ -35,6 +35,6 @@ async def integrate_openai(prompt: str) -> str:
                                        )
 
     request_count += 1
-    last_request_time = time.time()
+    last_request_time = time()
 
     return response['choices'][0]['message']['content'].strip() if 'choices' in response else "(Empty slide)"

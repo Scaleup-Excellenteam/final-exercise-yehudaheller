@@ -1,5 +1,5 @@
-import asyncio
-import os
+from asyncio import run
+from os import remove, path
 import time
 from datetime import datetime
 from pptx_parser import read_pptx_file
@@ -56,18 +56,16 @@ def remove_file_from_uploads(filename: str) -> None:
     """
     # Define the path to the uploads folder
     uploads_folder = "uploads"
-    print(f"filename: {filename}")
 
     # Check if the file exists in the uploads folder
-    file_path = os.path.join(uploads_folder, filename)
-    if not os.path.isfile(file_path):
+    file_path = path.join(uploads_folder, filename)
+    if not path.isfile(file_path):
         print(f"File '{filename}' does not exist in the uploads folder.")
         return
 
     # Remove the file
     try:
-        os.remove(file_path)
-        print(f"File '{filename}' removed successfully from the uploads folder.")
+        remove(file_path)
 
     except Exception as e:
         print(f"An error occurred while removing the file: {str(e)}")
@@ -110,4 +108,4 @@ def update_file_status_in_database_by_uid(uid: str, status: str, upload_time: da
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run(main())  # run the main function via the asyncio run function
