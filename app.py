@@ -159,36 +159,23 @@ def get_upload_by_uid(uid: str) -> Union[Upload, None]:
     return upload
 
 
-def get_file_explanation(filename_uid: str) -> Union[Dict[str, Any], None]:
+def get_file_explanation(uid):
     """
-    Get the explanation data from the processed output file.
+    Get the explanation of a file based on its UID.
 
     Args:
-        filename_uid: The filename or UID of the file.
+        uid: The UID of the file.
 
     Returns:
-        The explanation data as a dictionary if available, None otherwise.
+        The explanation of the file.
     """
-    # Retrieve the explanation from the processed output file if available
-    output_file_path = os.path.join(DONE_FOLDER, os.path.splitext(filename_uid)[0] + '.json')
-
-    print(f"the uid from the output file is {output_file_path}")
-
-    # Iterate over all files in the directory
-    for file in os.listdir(DONE_FOLDER):
-        file_to_check = "outputs\\" + file
-        if file_to_check == output_file_path:
-            # Build the file path
-            file_path = os.path.join(DONE_FOLDER, file)
-
-            # Read the file
-            with open(file_path, 'r') as f:
-                # Parse the JSON data
-                data = json.load(f)
-                return data
-
-    # File not found
-    return None
+    file_path = os.path.join(DONE_FOLDER, uid) + '.json'
+    if os.path.exists(file_path):
+        with open(file_path, "r") as file:
+            explanation = file.read()
+        return explanation
+    else:
+        return "Processing...\n Try Refresh Status later "
 
 
 class UIDNotFoundException(Exception):
@@ -248,7 +235,8 @@ def get_uid_by_email_and_filename(email: str, filename: str) -> str:
     """
     user = session.query(User).filter_by(email=email).first()
     if user:
-        last_upload = session.query(Upload).filter_by(filename=filename, user=user).order_by(desc(Upload.upload_time)).first()
+        last_upload = session.query(Upload).filter_by(filename=filename, user=user).order_by(
+            desc(Upload.upload_time)).first()
 
         if last_upload:
             return last_upload.uid
