@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 40px;
+        }
+
+        .container {
+            max-width: 500px;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #007bff;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0069d9;
+            border-color: #0062cc;
+        }
+
+        .alert {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+    </style>
+    <script>
+        function copyUid() {
+            var uidInput = document.getElementById("uidInput");
+            uidInput.select();
+            document.execCommand("copy");
+        }
+
+        function handleOptionChange() {
+            var uidForm = document.getElementById("uidForm");
+            var fileEmailForm = document.getElementById("fileEmailForm");
+
+            var optionUid = document.getElementById("optionUid");
+            var optionFilenameEmail = document.getElementById("optionFilenameEmail");
+
+            if (optionUid.checked) {
+                uidForm.style.display = "block";
+                fileEmailForm.style.display = "none";
+            } else if (optionFilenameEmail.checked) {
+                uidForm.style.display = "none";
+                fileEmailForm.style.display = "block";
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload a File</h1>
+        <form method="POST" enctype="multipart/form-data" action="/">
+            <div class="form-group">
+                <label for="fileInput">Select a File</label>
+                <input type="file" class="form-control-file" id="fileInput" name="file">
+            </div>
+            <div class="form-group">
+                <label for="emailInput">Email Address(optional)</label>
+                <input type="email" class="form-control" id="emailInput" name="email">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Upload</button>
+        </form>
+        {% if message %}
+            <div class="alert alert-success mt-4">
+                <p>{{ message }}</p>
+                <p>Your UID is:</p>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="uidInput" name="uid" value="{{ uid }}" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" onclick="copyUid()">Copy</button>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <form method="POST" action="{{ url_for('status') }}">
+            <div class="form-group mt-4">
+                <label>Choose an Option:</label><br>
+                <div class="form-check form-check-inline">
+                    <input type="radio" class="form-check-input" id="optionUid" name="option" value="uid" onchange="handleOptionChange()">
+                    <label class="form-check-label" for="optionUid">Use UID</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input type="radio" class="form-check-input" id="optionFilenameEmail" name="option" value="filename_email" onchange="handleOptionChange()">
+                    <label class="form-check-label" for="optionFilenameEmail">Use Filename and Email</label>
+                </div>
+            </div>
+
+            <div class="form-group" id="uidForm" style="display: none;">
+                <label for="uidInput">Enter UID</label>
+                <input type="text" class="form-control" id="uidInputStatus" name="uid">
+            </div>
+
+            <div class="form-group" id="fileEmailForm" style="display: none;">
+                <label for="filenameInput">Filename</label>
+                <input type="text" class="form-control" id="filenameInput" name="filename">
+                <label for="statusEmailInput">Email Address</label>
+                <input type="email" class="form-control" id="statusEmailInput" name="email">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">Get Status</button>
+        </form>
+
+        {% if error %}
+            <div class="alert alert-danger mt-4">
+                <p>{{ error }}</p>
+            </div>
+        {% endif %}
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+</body>
+</html>
